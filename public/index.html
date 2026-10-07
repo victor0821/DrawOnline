@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DrawOnline - Pizarra y Dibujo Colaborativo en Tiempo Real</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Socket.io Client -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Plantillas de dibujos -->
+  <script src="/templates/templates-list.js"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="/css/style.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen w-screen overflow-hidden flex flex-col font-sans select-none">
+
+  <!-- ========================================== -->
+  <!-- MODAL DE INGRESO (LOBBY & SELECCIÓN DE DIBUJO) -->
+  <!-- ========================================== -->
+  <div id="lobby-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md transition-opacity overflow-y-auto p-4 sm:p-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl relative overflow-hidden my-auto">
+      
+      <!-- Decoración de fondo -->
+      <div class="absolute -top-24 -right-24 w-56 h-56 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-56 h-56 bg-pink-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Encabezado -->
+      <div class="text-center mb-6 relative">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-2">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-400"></i>
+          Pizarra y Coloreado Colaborativo en Vivo
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
+          DrawOnline
+        </h1>
+        <p class="text-slate-400 text-xs sm:text-sm mt-1">
+          Elige un dibujo en blanco y negro, compártelo con tu código de sala y coloreen juntos en tiempo real
+        </p>
+      </div>
+
+      <!-- Paso 1: Configuración de Perfil -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tu Nombre de Artista</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
+              <i data-lucide="user" class="w-4 h-4"></i>
+            </span>
+            <input id="input-username" type="text" maxlength="20" placeholder="Ej. Picasso, Frida, Alex..." 
+              class="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Color de tu Cursor</label>
+          <div class="flex items-center justify-between gap-1.5 p-1.5 bg-slate-800/90 rounded-xl border border-slate-700/60" id="user-color-picker-group">
+            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-red-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#EF4444"></button>
+            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-orange-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#F97316"></button>
+            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-amber-400 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#F59E0B"></button>
+            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-emerald-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#10B981"></button>
+            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-cyan-400 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#06B6D4"></button>
+            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-indigo-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-indigo-500 hover:scale-110 transition" data-color="#6366F1"></button>
+            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-pink-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#EC4899"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 2: Opciones de Sala (Tabs) -->
+      <div>
+        <div class="flex bg-slate-800/70 p-1 rounded-xl mb-4">
+          <button id="tab-btn-create" class="flex-1 py-2.5 text-xs sm:text-sm font-semibold rounded-lg text-white bg-indigo-600 transition shadow-sm flex items-center justify-center gap-2">
+            <i data-lucide="palette" class="w-4 h-4"></i>
+            <span>1. Crear Sala y Elegir Dibujo</span>
+          </button>
+          <button id="tab-btn-join" class="flex-1 py-2.5 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+            <i data-lucide="key" class="w-4 h-4"></i>
+            <span>2. Unirse con Código de Sala</span>
+          </button>
+        </div>
+
+        <!-- Vista 1: Crear Sala y Catálogo de Dibujos B/N -->
+        <div id="view-create-room" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Selecciona el Dibujo a Blanco y Negro:
+            </label>
+            <!-- Opción para subir dibujo propio -->
+            <label class="text-xs text-indigo-400 hover:text-indigo-300 font-medium cursor-pointer flex items-center gap-1 transition">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              <span>Subir tu propia imagen B/N</span>
+              <input type="file" id="input-upload-template" accept="image/png, image/jpeg, image/svg+xml" class="hidden">
+            </label>
+          </div>
+
+          <!-- Galería interactiva de plantillas en blanco y negro -->
+          <div id="templates-gallery-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-56 sm:max-h-64 overflow-y-auto pr-1">
+            <!-- Renderizado dinámico desde templates-list.js -->
+          </div>
+
+          <!-- Pie: Botón Iniciar Sala -->
+          <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+            <div class="text-xs text-slate-400 text-center sm:text-left flex-1">
+              Dibujo seleccionado: <span id="selected-template-label" class="font-bold text-indigo-300">Mandala Zen</span>
+            </div>
+            <button id="btn-create-room" class="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition transform active:scale-98">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Crear Sala y Colorear</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Vista 2: Unirse a Sala existente con código -->
+        <div id="view-join-room" class="space-y-4 hidden py-2">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Código de Invitación de la Sala</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
+                <i data-lucide="key" class="w-4 h-4"></i>
+              </span>
+              <input id="input-room-code" type="text" placeholder="Ej. DRAW-7A9B" maxlength="12"
+                class="w-full uppercase font-mono tracking-wider text-base bg-slate-800/90 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2">
+              Al unirte con el código, se cargará el dibujo en blanco y negro de la sala y todos los colores que los participantes ya hayan rellenado.
+            </p>
+          </div>
+          <button id="btn-join-room" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition transform active:scale-98">
+            <i data-lucide="log-in" class="w-5 h-5"></i>
+            <span>Entrar al Lienzo y Colorear Juntos</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- BARRA SUPERIOR (HEADER) -->
+  <!-- ========================================== -->
+  <header class="h-14 bg-slate-900/95 backdrop-blur border-b border-slate-800 flex items-center justify-between px-3 sm:px-4 z-30 select-none">
+    
+    <!-- Izquierda: Logo y Estado -->
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl flex items-center justify-center shadow-md shadow-indigo-500/20">
+        <i data-lucide="palette" class="w-4 h-4 sm:w-5 sm:h-5 text-white"></i>
+      </div>
+      <div>
+        <span class="font-bold text-sm sm:text-base tracking-tight text-white flex items-center gap-1.5">
+          DrawOnline
+          <span class="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">En Vivo</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Centro: Sala, Dibujo Activo e Invitación -->
+    <div class="flex items-center gap-2">
+      <!-- Indicador de Sala y Botón Copiar -->
+      <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700/60 rounded-xl px-2.5 sm:px-3 py-1">
+        <span class="text-[11px] text-slate-400 font-medium hidden sm:inline">Sala:</span>
+        <span id="current-room-badge" class="font-mono font-bold text-xs sm:text-sm text-indigo-300">------</span>
+        
+        <button id="btn-copy-invite" class="ml-1.5 flex items-center gap-1 text-[11px] sm:text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-2 py-1 rounded-lg transition" data-tooltip="Copiar enlace de invitación">
+          <i data-lucide="link" class="w-3 h-3"></i>
+          <span>Invitar</span>
+        </button>
+      </div>
+
+      <!-- Dibujo actual y botón cambiar -->
+      <button id="btn-open-change-template" class="hidden md:flex items-center gap-1.5 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-xl px-2.5 py-1 text-xs text-slate-300 transition" data-tooltip="Cambiar dibujo a colorear">
+        <span id="header-template-icon">🌸</span>
+        <span id="header-template-name" class="font-medium max-w-[120px] truncate">Mandala Zen</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+      </button>
+    </div>
+
+    <!-- Derecha: Colaboradores, Chat y Herramientas -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- Avatares de Colaboradores Online -->
+      <div id="users-avatar-group" class="hidden sm:flex items-center -space-x-2 mr-1"></div>
+      
+      <span id="users-count-badge" class="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-2 py-1 rounded-lg font-medium">
+        1 online
+      </span>
+
+      <!-- Exportar Imagen -->
+      <button id="btn-open-export" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition" data-tooltip="Exportar / Descargar dibujo">
+        <i data-lucide="download" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Abrir Chat -->
+      <button id="btn-toggle-chat" class="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition" data-tooltip="Chat de la sala">
+        <i data-lucide="message-square" class="w-4 h-4"></i>
+        <span id="chat-unread-badge" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full ring-2 ring-slate-900"></span>
+      </button>
+
+      <!-- Salir -->
+      <button id="btn-leave-room" class="p-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition ml-0.5" data-tooltip="Salir de la sala">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- AREA DE TRABAJO PRINCIPAL (CANVAS Y TOOLBAR) -->
+  <!-- ========================================== -->
+  <main class="flex-1 relative overflow-hidden bg-slate-950">
+    
+    <!-- Contenedor del Lienzo con Capas -->
+    <div id="canvas-container" class="canvas-grid-dots">
+      <!-- Capa 1: Lienzo de dibujo y relleno permanente -->
+      <canvas id="main-canvas"></canvas>
+      <!-- Capa 2: Previsualización interactiva de figuras y trazo en curso -->
+      <canvas id="preview-canvas"></canvas>
+      <!-- Capa 3: Cursores de colaboradores -->
+      <div id="cursors-layer" class="absolute inset-0 pointer-events-none"></div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- BARRA LATERAL FLOTANTE DE HERRAMIENTAS -->
+    <!-- ========================================== -->
+    <aside class="side-bar absolute top-4 left-4 z-20 flex flex-col gap-2 bg-slate-900/90 backdrop-blur-md border border-slate-800/80 p-2 rounded-2xl shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto">
+      
+      <!-- Herramientas Principales -->
+      <div class="flex flex-col gap-1 border-b border-slate-800 pb-2">
+        <!-- BOTE DE PINTURA (HERRAMIENTA ESTRELLA PARA COLOREAR) -->
+        <button class="tool-btn active w-10 h-10 rounded-xl flex items-center justify-center text-amber-400 hover:text-white hover:bg-slate-800" data-tool="bucket" data-tooltip="Bote de Pintura / Rellenar espacio (F)">
+          <i data-lucide="paint-bucket" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Pincel Libre -->
+        <button class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800" data-tool="brush" data-tooltip="Pincel libre (P)">
+          <i data-lucide="pencil" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Resaltador -->
+        <button class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800" data-tool="highlighter" data-tooltip="Resaltador (H)">
+          <i data-lucide="highlighter" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Borrador -->
+        <button class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800" data-tool="eraser" data-tooltip="Borrador (E)">
+          <i data-lucide="eraser" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Cuentagotas (Gotero para absorber colores) -->
+        <button class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800" data-tool="picker" data-tooltip="Cuentagotas / Absorber color (I)">
+          <i data-lucide="pipette" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Figuras y detalles -->
+        <button class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800" data-tool="line" data-tooltip="Línea recta (L)">
+          <i data-lucide="minus" class="w-5 h-5"></i>
+        </button>
+
+        <button class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800" data-tool="rectangle" data-tooltip="Rectángulo (R)">
+          <i data-lucide="square" class="w-5 h-5"></i>
+        </button>
+
+        <button class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800" data-tool="circle" data-tooltip="Círculo (C)">
+          <i data-lucide="circle" class="w-5 h-5"></i>
+        </button>
+
+        <button class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800" data-tool="text" data-tooltip="Texto (T)">
+          <i data-lucide="type" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Puntero Láser -->
+        <button class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center text-rose-400 hover:text-rose-300 hover:bg-slate-800" data-tool="laser" data-tooltip="Puntero Láser (K)">
+          <i data-lucide="pointer" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Color Activo Grande y Selector de Paleta Completa -->
+      <div class="flex flex-col items-center gap-1.5 border-b border-slate-800 pb-2 pt-1">
+        <!-- Indicador de Color Activo -->
+        <div class="relative group" data-tooltip="Color activo para colorear">
+          <div id="active-color-indicator" class="w-8 h-8 rounded-xl border-2 border-white/80 shadow-md cursor-pointer transition transform group-hover:scale-105" style="background-color: #EF4444;"></div>
+        </div>
+
+        <!-- Paleta rápida de 16 colores populares -->
+        <div class="grid grid-cols-2 gap-1.5 my-1" id="quick-swatches-grid">
+          <!-- Renderizado dinámicamente -->
+        </div>
+
+        <!-- Botón para abrir la Gama Completa de Colores -->
+        <button id="btn-open-palette-modal" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 flex items-center justify-center transition border border-slate-700" data-tooltip="Ver Gama Completa de Colores">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Selector de color nativo HTML5 -->
+        <label class="w-8 h-8 rounded-xl cursor-pointer overflow-hidden border border-slate-700 hover:scale-105 transition flex items-center justify-center" data-tooltip="Color personalizado">
+          <input type="color" id="input-custom-color" value="#EF4444" class="w-12 h-12 -m-2 cursor-pointer bg-transparent">
+        </label>
+      </div>
+
+      <!-- Control de Grosor del Trazo -->
+      <div class="flex flex-col items-center gap-1 border-b border-slate-800 pb-2 pt-1" data-tooltip="Grosor de trazo">
+        <div id="size-preview-dot" class="w-3 h-3 bg-red-500 rounded-full my-1 transition-all"></div>
+        <input type="range" id="input-brush-size" min="1" max="50" value="6" orient="vertical" 
+          class="w-1 h-16 accent-indigo-500 bg-slate-800 rounded-lg cursor-pointer">
+        <span id="brush-size-text" class="text-[10px] font-mono text-slate-400">6px</span>
+      </div>
+
+      <!-- Acciones: Deshacer, Rehacer y Limpiar -->
+      <div class="flex flex-col gap-1 pt-1">
+        <button id="btn-undo" disabled class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent transition" data-tooltip="Deshacer (Ctrl+Z)">
+          <i data-lucide="undo" class="w-5 h-5"></i>
+        </button>
+
+        <button id="btn-redo" disabled class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent transition" data-tooltip="Rehacer (Ctrl+Y)">
+          <i data-lucide="redo" class="w-5 h-5"></i>
+        </button>
+
+        <button id="btn-clear" class="w-10 h-10 rounded-xl flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 transition" data-tooltip="Limpiar colores del dibujo">
+          <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- ========================================== -->
+    <!-- MODAL DE GAMA COMPLETA DE COLORES -->
+    <!-- ========================================== -->
+    <div id="palette-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm hidden">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+              <i data-lucide="palette" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white text-base">Gama Completa de Colores</h3>
+              <p class="text-xs text-slate-400">Selecciona el tono ideal para rellenar tus espacios</p>
+            </div>
+          </div>
+          <button id="btn-close-palette-modal" class="text-slate-400 hover:text-white p-1 rounded-lg">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Pestañas de categorías de colores -->
+        <div class="flex bg-slate-800/70 p-1 rounded-xl mb-4 text-xs font-semibold overflow-x-auto gap-1">
+          <button class="palette-category-tab active flex-1 py-1.5 px-2 rounded-lg bg-indigo-600 text-white whitespace-nowrap" data-cat="vivos">🌈 Vivos</button>
+          <button class="palette-category-tab flex-1 py-1.5 px-2 rounded-lg text-slate-400 hover:text-white whitespace-nowrap" data-cat="pasteles">🍬 Pasteles</button>
+          <button class="palette-category-tab flex-1 py-1.5 px-2 rounded-lg text-slate-400 hover:text-white whitespace-nowrap" data-cat="naturaleza">🌲 Naturaleza</button>
+          <button class="palette-category-tab flex-1 py-1.5 px-2 rounded-lg text-slate-400 hover:text-white whitespace-nowrap" data-cat="piel">🧑 Tonos Piel</button>
+          <button class="palette-category-tab flex-1 py-1.5 px-2 rounded-lg text-slate-400 hover:text-white whitespace-nowrap" data-cat="monocromo">🖤 Escala Grises</button>
+        </div>
+
+        <!-- Muestra de colores por categoría seleccionada -->
+        <div id="palette-colors-container" class="grid grid-cols-6 sm:grid-cols-8 gap-2.5 p-3 bg-slate-800/40 rounded-2xl border border-slate-700/50 mb-4 max-h-48 overflow-y-auto">
+          <!-- Colores inyectados dinámicamente -->
+        </div>
+
+        <!-- Selector manual y color actual -->
+        <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-400">Color seleccionado:</span>
+            <div id="palette-selected-preview" class="w-7 h-7 rounded-lg border border-white/50 shadow" style="background-color: #EF4444;"></div>
+            <span id="palette-selected-hex" class="font-mono text-xs text-indigo-300 font-bold">#EF4444</span>
+          </div>
+          <button id="btn-confirm-palette" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">
+            Usar Color
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL CAMBIAR DIBUJO EN SALA -->
+    <!-- ========================================== -->
+    <div id="change-template-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-xl w-full mx-4 shadow-2xl">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="image" class="w-5 h-5 text-indigo-400"></i>
+              Cambiar Dibujo para la Sala
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">El nuevo dibujo se sincronizará para todos los participantes de la sala</p>
+          </div>
+          <button id="btn-close-change-template" class="text-slate-400 hover:text-white">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <div id="change-template-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-64 overflow-y-auto pr-1 mb-4">
+          <!-- Galería inyectada -->
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <button id="btn-cancel-change-template" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">
+            Cancelar
+          </button>
+          <button id="btn-confirm-change-template" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Cambiar Dibujo</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PANEL LATERAL RETRÁCTIL (CHAT Y USUARIOS) -->
+    <!-- ========================================== -->
+    <div id="side-drawer" class="fixed top-14 right-0 bottom-0 w-80 bg-slate-900/95 backdrop-blur-md border-l border-slate-800 z-30 flex flex-col shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out">
+      <!-- Pestañas -->
+      <div class="flex border-b border-slate-800 bg-slate-900/60 p-1">
+        <button id="tab-chat" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition flex items-center justify-center gap-1.5">
+          <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+          <span>Chat de Sala</span>
+        </button>
+        <button id="tab-users" class="flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          <span>Artistas (<span id="drawer-user-count">1</span>)</span>
+        </button>
+        <button id="btn-close-drawer" class="p-2 text-slate-400 hover:text-white transition rounded-lg">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Contenido Tab Chat -->
+      <div id="drawer-chat-view" class="flex-1 flex flex-col overflow-hidden">
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm">
+          <div class="text-center my-2">
+            <span class="text-[11px] bg-slate-800/80 text-slate-400 px-3 py-1 rounded-full border border-slate-700/50">
+              ¡Bienvenidos a la sala de coloreado!
+            </span>
+          </div>
+        </div>
+
+        <!-- Input de mensaje -->
+        <form id="chat-form" class="p-3 border-t border-slate-800 bg-slate-900 flex gap-2">
+          <input id="chat-input" type="text" placeholder="Escribe un mensaje..." maxlength="300" 
+            class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl transition flex items-center justify-center">
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- Contenido Tab Usuarios -->
+      <div id="drawer-users-view" class="flex-1 p-4 overflow-y-auto hidden">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Conectados en este lienzo</h3>
+        <div id="drawer-users-list" class="space-y-2"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL DE EXPORTAR DIBUJO -->
+  <!-- ========================================== -->
+  <div id="export-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="download" class="w-5 h-5 text-indigo-400"></i>
+          Descargar Dibujo
+        </h3>
+        <button id="btn-close-export" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-400 mb-4">
+        Guarda la obra de arte coloreada en tu computadora.
+      </p>
+
+      <div class="space-y-3">
+        <button id="btn-export-png-white" class="w-full bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-between transition">
+          <span class="flex items-center gap-2 text-sm">
+            <i data-lucide="image" class="w-4 h-4 text-emerald-400"></i>
+            PNG (Fondo Blanco)
+          </span>
+          <span class="text-xs text-slate-400">Recomendado</span>
+        </button>
+
+        <button id="btn-export-jpeg" class="w-full bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-between transition">
+          <span class="flex items-center gap-2 text-sm">
+            <i data-lucide="file-image" class="w-4 h-4 text-amber-400"></i>
+            JPEG Comprimido
+          </span>
+          <span class="text-xs text-slate-400">.jpg</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL DE CONFIRMACIÓN PARA LIMPIAR -->
+  <!-- ========================================== -->
+  <div id="clear-confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl text-center">
+      <div class="w-12 h-12 bg-red-500/20 text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-lg font-bold text-white mb-1">¿Limpiar los colores del dibujo?</h3>
+      <p class="text-xs text-slate-400 mb-5">
+        Se borrarán todos los rellenos y trazos para empezar de nuevo a colorear el dibujo en blanco.
+      </p>
+      <div class="flex gap-2">
+        <button id="btn-cancel-clear" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl text-sm font-medium transition">
+          Cancelar
+        </button>
+        <button id="btn-confirm-clear" class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl text-sm font-medium transition">
+          Sí, Limpiar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- NOTIFICACIÓN TOAST FLOTANTE -->
+  <!-- ========================================== -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800/95 border border-slate-700 text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-medium pointer-events-none opacity-0 transition-opacity duration-300">
+    <i id="toast-icon" data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toast-message">Notificación</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/canvas.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

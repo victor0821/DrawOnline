@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#ffffff" />
+  <g stroke="#000000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="#ffffff">
+    <!-- Centro del mandala -->
+    <circle cx="400" cy="400" r="40" />
+    <circle cx="400" cy="400" r="70" />
+    <circle cx="400" cy="400" r="120" />
+    <circle cx="400" cy="400" r="180" />
+    <circle cx="400" cy="400" r="260" />
+    <circle cx="400" cy="400" r="350" />
+
+    <!-- Pétalos centrales (8 pétalos) -->
+    <path d="M 400 330 C 380 300 380 250 400 220 C 420 250 420 300 400 330 Z" />
+    <path d="M 400 470 C 380 500 380 550 400 580 C 420 550 420 500 400 470 Z" />
+    <path d="M 330 400 C 300 380 250 380 220 400 C 250 420 300 420 330 400 Z" />
+    <path d="M 470 400 C 500 380 550 380 580 400 C 550 420 500 420 470 400 Z" />
+
+    <!-- Pétalos diagonales -->
+    <path d="M 350 350 C 320 330 280 300 270 270 C 300 280 330 320 350 350 Z" />
+    <path d="M 450 350 C 480 330 520 300 530 270 C 500 280 470 320 450 350 Z" />
+    <path d="M 350 450 C 320 470 280 500 270 530 C 300 520 330 480 350 450 Z" />
+    <path d="M 450 450 C 480 470 520 500 530 530 C 500 520 470 480 450 450 Z" />
+
+    <!-- Anillo exterior con detalles geométricos -->
+    <!-- Triángulos exteriores -->
+    <polygon points="400,50 360,140 440,140" />
+    <polygon points="400,750 360,660 440,660" />
+    <polygon points="50,400 140,360 140,440" />
+    <polygon points="750,400 660,360 660,440" />
+
+    <polygon points="152,152 230,200 200,230" />
+    <polygon points="648,152 600,230 570,200" />
+    <polygon points="152,648 200,570 230,600" />
+    <polygon points="648,648 570,600 600,570" />
+
+    <!-- Círculos decorativos intermedios -->
+    <circle cx="400" cy="180" r="18" />
+    <circle cx="400" cy="620" r="18" />
+    <circle cx="180" cy="400" r="18" />
+    <circle cx="620" cy="400" r="18" />
+    <circle cx="245" cy="245" r="18" />
+    <circle cx="555" cy="245" r="18" />
+    <circle cx="245" cy="555" r="18" />
+    <circle cx="555" cy="555" r="18" />
+
+    <!-- Bordes adicionales -->
+    <path d="M 280 160 Q 400 210 520 160" />
+    <path d="M 280 640 Q 400 590 520 640" />
+    <path d="M 160 280 Q 210 400 160 520" />
+    <path d="M 640 280 Q 590 400 640 520" />
+  </g>
+</svg>

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#ffffff" />
+  <g stroke="#000000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="#ffffff">
+    <!-- Sol tropical -->
+    <circle cx="160" cy="160" r="60" />
+    <!-- Rayos del sol -->
+    <line x1="160" y1="80" x2="160" y2="50" stroke-width="5" />
+    <line x1="160" y1="240" x2="160" y2="270" stroke-width="5" />
+    <line x1="80" y1="160" x2="50" y2="160" stroke-width="5" />
+    <line x1="240" y1="160" x2="270" y2="160" stroke-width="5" />
+    <line x1="100" y1="100" x2="80" y2="80" stroke-width="5" />
+    <line x1="220" y1="220" x2="240" y2="240" stroke-width="5" />
+    <line x1="100" y1="220" x2="80" y2="240" stroke-width="5" />
+    <line x1="220" y1="100" x2="240" y2="80" stroke-width="5" />
+
+    <!-- Nubes -->
+    <path d="M 600 140 C 620 120 660 120 680 140 C 700 130 730 140 740 160 L 580 160 Z" />
+
+    <!-- Gaviotas en el cielo -->
+    <path d="M 340 120 Q 360 100 380 120 Q 400 100 420 120" stroke-width="3" />
+    <path d="M 460 160 Q 475 145 490 160 Q 505 145 520 160" stroke-width="3" />
+
+    <!-- DELFÍN SALTANDO -->
+    <!-- Cola y aleta caudal -->
+    <path d="M 230 480 C 180 470 140 440 100 400 C 110 450 130 480 160 500 C 120 520 90 550 80 590 C 130 550 180 530 230 510 Z" />
+
+    <!-- Lomo y cuerpo del delfín -->
+    <path d="M 230 480 C 260 380 340 260 480 250 C 580 240 660 280 710 350 C 730 380 720 400 680 400 C 640 400 610 380 570 380 C 450 380 340 430 230 510 Z" />
+
+    <!-- Hocico / Pico y sonrisa del delfín -->
+    <path d="M 710 350 C 740 370 750 385 730 395 C 710 400 680 400 670 400" />
+    <path d="M 680 385 C 660 390 645 385 640 385" stroke-width="3" />
+
+    <!-- Ojo del delfín -->
+    <circle cx="630" cy="340" r="12" />
+    <circle cx="633" cy="338" r="4" fill="#000000" />
+
+    <!-- Aleta Dorsal -->
+    <path d="M 440 255 C 460 190 500 170 540 180 C 520 220 500 245 490 252 Z" />
+
+    <!-- Aleta Pectoral Delantera -->
+    <path d="M 520 380 C 530 430 570 480 610 490 C 600 450 580 420 560 380 Z" />
+
+    <!-- Línea de vientre (zona de color más claro) -->
+    <path d="M 670 400 C 600 420 480 420 380 450 C 300 480 250 500 230 510" stroke-dasharray="4 2" stroke-width="2" />
+
+    <!-- Salpicaduras de agua / Gotas -->
+    <circle cx="650" cy="460" r="8" />
+    <circle cx="680" cy="480" r="6" />
+    <circle cx="630" cy="500" r="10" />
+    <circle cx="210" cy="440" r="7" />
+    <circle cx="180" cy="420" r="5" />
+
+    <!-- OLAS DEL MAR -->
+    <!-- Ola Capa 1 -->
+    <path d="M 0 560 Q 100 520 200 560 T 400 560 T 600 560 T 800 560 L 800 640 L 0 640 Z" />
+    <!-- Ola Capa 2 -->
+    <path d="M 0 630 Q 120 590 240 630 T 480 630 T 720 630 T 800 630 L 800 720 L 0 720 Z" />
+    <!-- Ola Capa 3 / Profundidad -->
+    <path d="M 0 710 Q 100 680 200 710 T 400 710 T 600 710 T 800 710 L 800 800 L 0 800 Z" />
+
+    <!-- Fondo Marino / Burbujas -->
+    <circle cx="100" cy="760" r="12" />
+    <circle cx="120" cy="730" r="8" />
+    <circle cx="500" cy="760" r="14" />
+    <circle cx="520" cy="735" r="9" />
+  </g>
+</svg>

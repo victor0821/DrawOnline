@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#ffffff" />
+  <g stroke="#000000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="#ffffff">
+    <!-- Planeta 1 con anillos (arriba a la derecha) -->
+    <circle cx="650" cy="180" r="70" />
+    <ellipse cx="650" cy="180" rx="110" ry="25" transform="rotate(-20 650 180)" />
+    <!-- Cráteres -->
+    <circle cx="630" cy="160" r="14" />
+    <circle cx="670" cy="200" r="10" />
+
+    <!-- Planeta 2 (abajo a la izquierda) -->
+    <circle cx="160" cy="650" r="85" />
+    <path d="M 90 620 Q 160 670 230 620" />
+    <path d="M 100 660 Q 160 700 220 660" />
+
+    <!-- Luna / Estrella (arriba a la izquierda) -->
+    <path d="M 140 120 A 50 50 0 1 0 190 200 A 40 40 0 0 1 140 120 Z" />
+
+    <!-- Estrellas de 4 y 5 puntas -->
+    <polygon points="320,100 326,115 342,118 330,128 334,144 320,135 306,144 310,128 298,118 314,115" />
+    <polygon points="680,480 685,492 698,494 688,502 691,515 680,508 669,515 672,502 662,494 675,492" />
+    <polygon points="120,380 125,392 138,394 128,402 131,415 120,408 109,415 112,402 102,394 115,392" />
+
+    <!-- COHETE CENTRAL -->
+    <!-- Cuerpo del cohete -->
+    <path d="M 400 120 C 350 240 320 400 320 540 L 480 540 C 480 400 450 240 400 120 Z" />
+    
+    <!-- Punta / Cono del cohete -->
+    <path d="M 400 120 C 375 190 355 240 350 260 L 450 260 C 445 240 425 190 400 120 Z" />
+
+    <!-- Ventana / Escotilla circular -->
+    <circle cx="400" cy="350" r="50" />
+    <circle cx="400" cy="350" r="38" />
+
+    <!-- Franjas decorativas en el cuerpo -->
+    <path d="M 326 440 L 474 440" />
+    <path d="M 322 470 L 478 470" />
+
+    <!-- Aleta Izquierda -->
+    <path d="M 320 450 C 270 480 230 550 220 620 C 270 610 310 580 320 540 Z" />
+
+    <!-- Aleta Derecha -->
+    <path d="M 480 450 C 530 480 570 550 580 620 C 530 610 490 580 480 540 Z" />
+
+    <!-- Aleta Central pequeña -->
+    <path d="M 385 490 L 385 550 L 415 550 L 415 490 Z" />
+
+    <!-- Tobera / Motor -->
+    <polygon points="340,540 360,570 440,570 460,540" />
+
+    <!-- Fuego / Llamas de propulsión -->
+    <!-- Capa exterior de fuego -->
+    <path d="M 360 570 C 340 640 370 700 400 760 C 430 700 460 640 440 570 Z" />
+    <!-- Capa interior de fuego -->
+    <path d="M 380 570 C 370 620 390 660 400 710 C 410 660 430 620 420 570 Z" />
+
+    <!-- Nubes espaciales / Nebulosa -->
+    <path d="M 520 660 C 540 640 570 640 590 660 C 610 650 640 660 650 680 C 670 690 670 720 650 730 L 520 730 Z" />
+  </g>
+</svg>

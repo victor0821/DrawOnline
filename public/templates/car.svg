@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#ffffff" />
+  <g stroke="#000000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="#ffffff">
+    <!-- Nubes y pista de fondo -->
+    <path d="M 120 180 C 140 160 180 160 200 180 C 220 170 250 180 260 200 L 100 200 Z" />
+    <path d="M 520 160 C 540 140 580 140 600 160 C 620 150 650 160 660 180 L 500 180 Z" />
+    
+    <!-- Pista de asfalto -->
+    <path d="M 0 540 L 800 540 L 800 750 L 0 750 Z" />
+    <!-- Líneas discontinuas de la pista -->
+    <line x1="50" y1="650" x2="160" y2="650" stroke-dasharray="10 0" stroke-width="8" />
+    <line x1="260" y1="650" x2="370" y2="650" stroke-dasharray="10 0" stroke-width="8" />
+    <line x1="470" y1="650" x2="580" y2="650" stroke-dasharray="10 0" stroke-width="8" />
+    <line x1="680" y1="650" x2="780" y2="650" stroke-dasharray="10 0" stroke-width="8" />
+
+    <!-- Bandera a cuadros de meta (arriba derecha) -->
+    <line x1="720" y1="220" x2="720" y2="380" stroke-width="6" />
+    <rect x="720" y="220" width="30" height="25" />
+    <rect x="750" y="245" width="30" height="25" />
+    <rect x="720" y="270" width="30" height="25" />
+    <rect x="750" y="220" width="30" height="25" />
+    <rect x="720" y="245" width="30" height="25" />
+    <rect x="750" y="270" width="30" height="25" />
+
+    <!-- COCHE DE CARRERAS -->
+    <!-- Alerón Trasero -->
+    <polygon points="100,340 160,340 150,370 90,370" />
+    <line x1="120" y1="370" x2="130" y2="440" stroke-width="6" />
+    <line x1="150" y1="370" x2="160" y2="440" stroke-width="6" />
+
+    <!-- Chasis / Carrocería del coche -->
+    <path d="M 120 440 C 180 430 220 370 280 340 C 370 300 480 300 550 360 C 620 380 670 420 730 460 C 745 470 740 500 720 520 L 700 540 L 610 540 C 600 480 520 480 510 540 L 290 540 C 280 480 200 480 190 540 L 110 540 C 90 530 90 480 120 440 Z" />
+
+    <!-- Parabrisas y Cabina -->
+    <path d="M 320 350 C 370 320 450 320 500 355 L 485 410 L 305 410 Z" />
+    <line x1="410" y1="325" x2="400" y2="410" />
+
+    <!-- Ventana lateral trasera -->
+    <path d="M 270 380 L 300 370 L 300 410 L 260 410 Z" />
+
+    <!-- Franja de carrera lateral -->
+    <path d="M 240 450 L 600 450 L 590 480 L 220 480 Z" />
+    <!-- Círculo de número -->
+    <circle cx="410" cy="465" r="28" />
+    <text x="403" y="475" font-family="sans-serif" font-size="28" font-weight="bold" stroke="none" fill="#000000">7</text>
+
+    <!-- Faro delantero -->
+    <polygon points="690,460 725,480 705,495 680,480" />
+
+    <!-- Rueda Delantera -->
+    <circle cx="560" cy="540" r="55" />
+    <circle cx="560" cy="540" r="32" />
+    <circle cx="560" cy="540" r="14" />
+    <!-- Radios Rueda Delantera -->
+    <line x1="560" y1="508" x2="560" y2="572" />
+    <line x1="528" y1="540" x2="592" y2="540" />
+
+    <!-- Rueda Trasera -->
+    <circle cx="240" cy="540" r="55" />
+    <circle cx="240" cy="540" r="32" />
+    <circle cx="240" cy="540" r="14" />
+    <!-- Radios Rueda Trasera -->
+    <line x1="240" y1="508" x2="240" y2="572" />
+    <line x1="208" y1="540" x2="272" y2="540" />
+
+    <!-- Tubo de escape con humo -->
+    <rect x="80" y="500" width="30" height="15" />
+    <path d="M 60 500 C 40 480 30 510 10 500" stroke-width="3" />
+    <path d="M 70 515 C 40 520 20 540 0 535" stroke-width="3" />
+  </g>
+</svg>

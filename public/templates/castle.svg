@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#ffffff" />
+  <g stroke="#000000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="#ffffff">
+    <!-- Sol y cielo -->
+    <circle cx="680" cy="140" r="50" />
+    <path d="M 120 130 C 140 110 180 110 200 130 C 220 120 250 130 260 150 C 270 170 260 190 230 200 L 110 200 C 90 180 90 150 120 130 Z" />
+
+    <!-- Montañas al fondo -->
+    <polygon points="40,460 200,280 340,460" />
+    <polygon points="200,280 170,320 230,320" /> <!-- Nieve montaña 1 -->
+
+    <polygon points="460,460 620,260 760,460" />
+    <polygon points="620,260 590,300 650,300" /> <!-- Nieve montaña 2 -->
+
+    <!-- Suelo y colina -->
+    <path d="M 0 560 Q 400 480 800 560 L 800 800 L 0 800 Z" />
+
+    <!-- CASTILLO -->
+    <!-- Muralla Principal Inferior -->
+    <rect x="250" y="440" width="300" height="150" />
+
+    <!-- Almenas Muralla Principal -->
+    <rect x="250" y="420" width="30" height="20" />
+    <rect x="310" y="420" width="30" height="20" />
+    <rect x="370" y="420" width="30" height="20" />
+    <rect x="430" y="420" width="30" height="20" />
+    <rect x="490" y="420" width="30" height="20" />
+    <rect x="520" y="420" width="30" height="20" />
+
+    <!-- Puerta de arco medieval -->
+    <path d="M 360 590 L 360 500 C 360 460 440 460 440 500 L 440 590 Z" />
+    <!-- Rejas puerta -->
+    <line x1="400" y1="465" x2="400" y2="590" />
+    <line x1="360" y1="520" x2="440" y2="520" />
+    <line x1="360" y1="555" x2="440" y2="555" />
+
+    <!-- Camino que baja del castillo -->
+    <path d="M 370 590 C 350 670 260 720 200 800 L 600 800 C 530 720 450 670 430 590 Z" />
+
+    <!-- Torre Izquierda -->
+    <rect x="180" y="360" width="90" height="230" />
+    <!-- Techo cónico Torre Izq -->
+    <polygon points="160,360 225,240 290,360" />
+    <!-- Bandera Torre Izq -->
+    <line x1="225" y1="240" x2="225" y2="190" />
+    <polygon points="225,190 265,205 225,220" />
+    <!-- Ventana Torre Izq -->
+    <path d="M 210 430 L 210 400 C 210 390 240 390 240 400 L 240 430 Z" />
+
+    <!-- Torre Derecha -->
+    <rect x="530" y="360" width="90" height="230" />
+    <!-- Techo cónico Torre Der -->
+    <polygon points="510,360 575,240 640,360" />
+    <!-- Bandera Torre Der -->
+    <line x1="575" y1="240" x2="575" y2="190" />
+    <polygon points="575,190 615,205 575,220" />
+    <!-- Ventana Torre Der -->
+    <path d="M 560 430 L 560 400 C 560 390 590 390 590 400 L 590 430 Z" />
+
+    <!-- Gran Torre Central -->
+    <rect x="330" y="270" width="140" height="170" />
+    <!-- Almenas Torre Central -->
+    <rect x="330" y="250" width="25" height="20" />
+    <rect x="370" y="250" width="25" height="20" />
+    <rect x="410" y="250" width="25" height="20" />
+    <rect x="445" y="250" width="25" height="20" />
+
+    <!-- Techo Torre Central -->
+    <polygon points="320,250 400,130 480,250" />
+    <!-- Gran Bandera Central -->
+    <line x1="400" y1="130" x2="400" y2="70" />
+    <polygon points="400,70 460,90 400,110" />
+    <!-- Ventana Torre Central -->
+    <path d="M 385 330 L 385 300 C 385 290 415 290 415 300 L 415 330 Z" />
+  </g>
+</svg>
