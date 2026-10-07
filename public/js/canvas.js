@@ -1,7 +1,7 @@
 /**
  * DrawOnline - Canvas Engine
- * Manejo de dibujo colaborativo, coloreado con bote de pintura (flood fill),
- * plantillas en blanco y negro y suavizado de curvas.
+ * Sistema de Lienzo Virtual Estandarizado (1000x1000 px) para sincronización
+ * perfecta entre pantallas de diferentes tamaños, resoluciones y dispositivos.
  */
 
 class DrawingCanvas {
@@ -11,10 +11,24 @@ class DrawingCanvas {
     this.mainCtx = this.mainCanvas.getContext('2d', { willReadFrequently: true });
     this.previewCtx = this.previewCanvas.getContext('2d');
 
-    // Herramienta activa por defecto: 'bucket' (Bote de pintura para colorear)
+    // Resolución virtual fija para todas las salas y dispositivos
+    this.VIRTUAL_SIZE = 1000;
+    this.width = this.VIRTUAL_SIZE;
+    this.height = this.VIRTUAL_SIZE;
+
+    // Fijar resolución interna estandarizada
+    this.mainCanvas.width = this.VIRTUAL_SIZE;
+    this.mainCanvas.height = this.VIRTUAL_SIZE;
+    this.previewCanvas.width = this.VIRTUAL_SIZE;
+    this.previewCanvas.height = this.VIRTUAL_SIZE;
+
+    // Tamaño visual mostrado en pantalla (CSS px)
+    this.displaySize = 800;
+
+    // Herramienta activa
     this.currentTool = 'bucket'; // bucket, brush, highlighter, eraser, line, arrow, rectangle, circle, text, laser, picker
     this.currentColor = '#EF4444';
-    this.currentSize = 6;
+    this.currentSize = 8;
     this.currentOpacity = 1.0;
     this.fillShapes = false;
 
@@ -30,13 +44,13 @@ class DrawingCanvas {
     this.currentPoints = [];
     this.currentStrokeId = null;
 
-    // Trazos en vivo de otros colaboradores
+    // Trazos remotos en vivo
     this.remoteActiveStrokes = new Map();
 
-    // Historial local de acciones (trazos, figuras, flood-fills)
+    // Historial sincronizado de acciones (trazos, figuras, rellenos)
     this.strokes = [];
 
-    // Callbacks de eventos para Socket.io
+    // Callbacks de Socket.io
     this.onStrokeStart = options.onStrokeStart || (() => {});
     this.onStrokePoint = options.onStrokePoint || (() => {});
     this.onStrokeComplete = options.onStrokeComplete || (() => {});
@@ -44,44 +58,40 @@ class DrawingCanvas {
     this.onFloodFill = options.onFloodFill || (() => {});
     this.onColorPicked = options.onColorPicked || (() => {});
 
-    this.dpr = window.devicePixelRatio || 1;
-    this.initCanvasSize();
+    this.fitBoardToContainer();
     this.setupEventListeners();
 
-    window.addEventListener('resize', () => this.handleResize());
+    window.addEventListener('resize', () => this.fitBoardToContainer());
   }
 
-  // Inicializar dimensiones con soporte HiDPI
-  initCanvasSize() {
-    const container = this.mainCanvas.parentElement;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+  // Ajustar el tablero visual para que quepa proporcionalmente en la pantalla del usuario
+  fitBoardToContainer() {
+    const container = document.getElementById('canvas-container');
+    if (!container) return;
 
-    this.width = width;
-    this.height = height;
-    this.dpr = window.devicePixelRatio || 1;
+    const isMobile = window.innerWidth < 640;
+    const paddingX = isMobile ? 16 : (window.innerWidth < 1024 ? 80 : 120);
+    const paddingY = isMobile ? 16 : 40;
 
-    this.mainCanvas.width = width * this.dpr;
-    this.mainCanvas.height = height * this.dpr;
-    this.mainCanvas.style.width = `${width}px`;
-    this.mainCanvas.style.height = `${height}px`;
+    const maxW = Math.max(260, container.clientWidth - paddingX);
+    const maxH = Math.max(260, container.clientHeight - paddingY);
+    const displaySize = Math.floor(Math.min(maxW, maxH));
 
-    this.previewCanvas.width = width * this.dpr;
-    this.previewCanvas.height = height * this.dpr;
-    this.previewCanvas.style.width = `${width}px`;
-    this.previewCanvas.style.height = `${height}px`;
+    this.displaySize = displaySize;
 
-    this.redrawAll();
-  }
-
-  handleResize() {
-    const container = this.mainCanvas.parentElement;
-    if (this.width !== container.clientWidth || this.height !== container.clientHeight) {
-      this.initCanvasSize();
+    const board = document.getElementById('canvas-board');
+    if (board) {
+      board.style.width = `${displaySize}px`;
+      board.style.height = `${displaySize}px`;
     }
+
+    this.mainCanvas.style.width = `${displaySize}px`;
+    this.mainCanvas.style.height = `${displaySize}px`;
+    this.previewCanvas.style.width = `${displaySize}px`;
+    this.previewCanvas.style.height = `${displaySize}px`;
   }
 
-  // Cargar una plantilla en blanco y negro
+  // Cargar plantilla en blanco y negro
   loadTemplate(src, callback) {
     this.templateSrc = src;
     if (!src) {
@@ -110,35 +120,27 @@ class DrawingCanvas {
     img.src = src;
   }
 
-  // Dibujar la plantilla centrada manteniendo su proporción
+  // Dibujar plantilla estandarizada en el espacio 1000x1000
   drawTemplateToContext(ctx) {
     if (!this.templateImage) return;
-
-    const canvasW = this.mainCanvas.width;
-    const canvasH = this.mainCanvas.height;
-    const imgW = this.templateImage.width;
-    const imgH = this.templateImage.height;
-
-    // Calcular dimensiones proporcionales (ajustar con margen del 92%)
-    const scale = Math.min((canvasW * 0.92) / imgW, (canvasH * 0.92) / imgH);
-    const drawW = imgW * scale;
-    const drawH = imgH * scale;
-    const drawX = (canvasW - drawW) / 2;
-    const drawY = (canvasH - drawH) / 2;
-
     ctx.save();
-    ctx.drawImage(this.templateImage, drawX, drawY, drawW, drawH);
+    ctx.drawImage(this.templateImage, 0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
     ctx.restore();
   }
 
-  // Coordenadas relativas
+  // Convertir coordenadas del click/touch a coordenadas virtuales fijas (0 a 1000)
   getPointerCoords(e) {
     const rect = this.mainCanvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const scale = this.VIRTUAL_SIZE / rect.width;
+    const x = (clientX - rect.left) * scale;
+    const y = (clientY - rect.top) * scale;
+
     return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
+      x: Math.max(0, Math.min(this.VIRTUAL_SIZE - 1, x)),
+      y: Math.max(0, Math.min(this.VIRTUAL_SIZE - 1, y))
     };
   }
 
@@ -159,7 +161,9 @@ class DrawingCanvas {
       this.handleMove(e);
     }, { passive: false });
 
-    window.addEventListener('touchend', (e) => this.handleEnd(e));
+    window.addEventListener('touchend', (e) => {
+      this.handleEnd(e);
+    });
   }
 
   // ==========================================
@@ -172,40 +176,42 @@ class DrawingCanvas {
     this.startX = coords.x;
     this.startY = coords.y;
 
-    // 1. Herramienta Bote de Pintura (Flood Fill para colorear)
+    // 1. Bote de Pintura (Flood Fill)
     if (this.currentTool === 'bucket') {
-      this.applyFloodFill(coords.x, coords.y, this.currentColor);
-      const fillAction = {
-        id: 'fill_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now(),
-        type: 'floodFill',
-        x: Math.round(coords.x),
-        y: Math.round(coords.y),
-        color: this.currentColor
-      };
-      this.strokes.push(fillAction);
-      this.onFloodFill(fillAction);
+      const filled = this.applyFloodFill(coords.x, coords.y, this.currentColor);
+      if (filled) {
+        const fillAction = {
+          id: 'fill_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now(),
+          type: 'floodFill',
+          x: Math.round(coords.x),
+          y: Math.round(coords.y),
+          color: this.currentColor
+        };
+        this.strokes.push(fillAction);
+        this.onFloodFill(fillAction);
+      }
       return;
     }
 
-    // 2. Herramienta Cuentagotas / Selector de Color (Picker)
+    // 2. Cuentagotas (Picker)
     if (this.currentTool === 'picker') {
       this.pickColorAt(coords.x, coords.y);
       return;
     }
 
-    // 3. Herramienta Texto
+    // 3. Texto
     if (this.currentTool === 'text') {
       this.handleTextInput(coords.x, coords.y);
       return;
     }
 
-    // 4. Herramienta Puntero Láser
+    // 4. Láser
     if (this.currentTool === 'laser') {
       this.isDrawing = true;
       return;
     }
 
-    // 5. Herramientas de trazo y figuras
+    // 5. Trazos y figuras
     this.isDrawing = true;
     this.currentStrokeId = 's_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
 
@@ -250,7 +256,7 @@ class DrawingCanvas {
         point: coords
       });
     } else if (['line', 'arrow', 'rectangle', 'circle'].includes(this.currentTool)) {
-      this.previewCtx.clearRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
+      this.previewCtx.clearRect(0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
       this.drawShape(
         this.previewCtx,
         this.currentTool,
@@ -296,7 +302,7 @@ class DrawingCanvas {
       }
       this.currentPoints = [];
     } else if (['line', 'arrow', 'rectangle', 'circle'].includes(this.currentTool)) {
-      this.previewCtx.clearRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
+      this.previewCtx.clearRect(0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
 
       const dist = Math.hypot(coords.x - this.startX, coords.y - this.startY);
       if (dist > 3) {
@@ -336,7 +342,7 @@ class DrawingCanvas {
   }
 
   // ==========================================
-  // FLOOD FILL (BOTE DE PINTURA PARA COLOREAR)
+  // FLOOD FILL (BOTE DE PINTURA SINCRONIZADO)
   // ==========================================
 
   hexToRgb(hex) {
@@ -347,13 +353,12 @@ class DrawingCanvas {
   }
 
   applyFloodFill(clickX, clickY, fillColorHex) {
-    const dpr = this.dpr;
-    const startX = Math.round(clickX * dpr);
-    const startY = Math.round(clickY * dpr);
-    const w = this.mainCanvas.width;
-    const h = this.mainCanvas.height;
+    const startX = Math.round(clickX);
+    const startY = Math.round(clickY);
+    const w = this.VIRTUAL_SIZE;
+    const h = this.VIRTUAL_SIZE;
 
-    if (startX < 0 || startX >= w || startY < 0 || startY >= h) return;
+    if (startX < 0 || startX >= w || startY < 0 || startY >= h) return false;
 
     const imgData = this.mainCtx.getImageData(0, 0, w, h);
     const data = imgData.data;
@@ -366,14 +371,14 @@ class DrawingCanvas {
 
     // Si hace click exactamente sobre una línea negra de contorno, no rellenar
     if (startR < 70 && startG < 70 && startB < 70 && startA > 180) {
-      return;
+      return false;
     }
 
     const [fillR, fillG, fillB] = this.hexToRgb(fillColorHex);
 
     // Si el color objetivo ya es igual al color de relleno, salir
     if (Math.abs(startR - fillR) < 8 && Math.abs(startG - fillG) < 8 && Math.abs(startB - fillB) < 8) {
-      return;
+      return false;
     }
 
     const tolerance = 48; // Tolerancia para cubrir bordes suavizados (antialiasing)
@@ -397,7 +402,6 @@ class DrawingCanvas {
       );
     };
 
-    // Algoritmo de inundación optimizado con cola BFS y mapa booleano plano
     const visited = new Uint8Array(w * h);
     const queue = [startX, startY];
     visited[startY * w + startX] = 1;
@@ -436,17 +440,16 @@ class DrawingCanvas {
       }
     }
 
-    // Aplicar los nuevos píxeles coloreados
     this.mainCtx.putImageData(imgData, 0, 0);
 
-    // Si hay una plantilla activa, re-dibujar las líneas negras en modo 'multiply' para que
-    // los contornos queden siempre 100% nítidos e impecables
+    // Reforzar contornos en modo multiply
     if (this.templateImage) {
       this.reinforceTemplateLines();
     }
+
+    return true;
   }
 
-  // Reforzar contornos negros de la plantilla por encima de los colores
   reinforceTemplateLines() {
     this.mainCtx.save();
     this.mainCtx.globalCompositeOperation = 'multiply';
@@ -454,11 +457,9 @@ class DrawingCanvas {
     this.mainCtx.restore();
   }
 
-  // Cuentagotas para absorber color de cualquier punto del dibujo
   pickColorAt(clickX, clickY) {
-    const dpr = this.dpr;
-    const px = Math.round(clickX * dpr);
-    const py = Math.round(clickY * dpr);
+    const px = Math.round(clickX);
+    const py = Math.round(clickY);
     const pixel = this.mainCtx.getImageData(px, py, 1, 1).data;
 
     const r = pixel[0];
@@ -466,7 +467,6 @@ class DrawingCanvas {
     const b = pixel[2];
     const a = pixel[3];
 
-    // Ignorar si es transparente
     if (a < 50) return;
 
     const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
@@ -489,7 +489,7 @@ class DrawingCanvas {
       x: x,
       y: y,
       color: this.currentColor,
-      size: Math.max(16, this.currentSize * 4),
+      size: Math.max(20, this.currentSize * 3),
       opacity: this.getEffectiveOpacity()
     };
 
@@ -499,13 +499,12 @@ class DrawingCanvas {
   }
 
   drawText(ctx, item) {
-    const dpr = this.dpr;
     ctx.save();
     ctx.globalAlpha = item.opacity || 1.0;
     ctx.fillStyle = item.color;
-    ctx.font = `bold ${item.size * dpr}px 'Plus Jakarta Sans', sans-serif`;
+    ctx.font = `bold ${item.size}px 'Plus Jakarta Sans', sans-serif`;
     ctx.textBaseline = 'middle';
-    ctx.fillText(item.text, item.x * dpr, item.y * dpr);
+    ctx.fillText(item.text, item.x, item.y);
     ctx.restore();
   }
 
@@ -519,7 +518,6 @@ class DrawingCanvas {
   }
 
   renderPoint(ctx, point, tool, color, size, opacity) {
-    const dpr = this.dpr;
     ctx.save();
     ctx.globalAlpha = opacity;
     if (tool === 'eraser') {
@@ -530,13 +528,12 @@ class DrawingCanvas {
       ctx.fillStyle = color;
     }
     ctx.beginPath();
-    ctx.arc(point.x * dpr, point.y * dpr, (size * dpr) / 2, 0, Math.PI * 2);
+    ctx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
   renderSegment(ctx, p1, p2, tool, color, size, opacity) {
-    const dpr = this.dpr;
     ctx.save();
     ctx.globalAlpha = opacity;
     if (tool === 'eraser') {
@@ -546,13 +543,13 @@ class DrawingCanvas {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = color;
     }
-    ctx.lineWidth = size * dpr;
+    ctx.lineWidth = size;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
     ctx.beginPath();
-    ctx.moveTo(p1.x * dpr, p1.y * dpr);
-    ctx.lineTo(p2.x * dpr, p2.y * dpr);
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
     ctx.stroke();
     ctx.restore();
   }
@@ -566,7 +563,6 @@ class DrawingCanvas {
       return;
     }
 
-    const dpr = this.dpr;
     ctx.save();
     ctx.globalAlpha = opacity || 1.0;
     if (tool === 'eraser') {
@@ -576,62 +572,56 @@ class DrawingCanvas {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = color;
     }
-    ctx.lineWidth = size * dpr;
+    ctx.lineWidth = size;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
     ctx.beginPath();
-    ctx.moveTo(points[0].x * dpr, points[0].y * dpr);
+    ctx.moveTo(points[0].x, points[0].y);
 
     for (let i = 1; i < points.length - 1; i++) {
       const xc = (points[i].x + points[i + 1].x) / 2;
       const yc = (points[i].y + points[i + 1].y) / 2;
-      ctx.quadraticCurveTo(points[i].x * dpr, points[i].y * dpr, xc * dpr, yc * dpr);
+      ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
     }
     const last = points[points.length - 1];
-    ctx.lineTo(last.x * dpr, last.y * dpr);
+    ctx.lineTo(last.x, last.y);
 
     ctx.stroke();
     ctx.restore();
   }
 
   drawShape(ctx, tool, x1, y1, x2, y2, color, size, opacity, filled) {
-    const dpr = this.dpr;
     ctx.save();
     ctx.globalAlpha = opacity;
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
-    ctx.lineWidth = size * dpr;
+    ctx.lineWidth = size;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    const sx1 = x1 * dpr;
-    const sy1 = y1 * dpr;
-    const sx2 = x2 * dpr;
-    const sy2 = y2 * dpr;
-
     if (tool === 'line') {
       ctx.beginPath();
-      ctx.moveTo(sx1, sy1);
-      ctx.lineTo(sx2, sy2);
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
       ctx.stroke();
     } else if (tool === 'arrow') {
-      this.drawArrow(ctx, sx1, sy1, sx2, sy2, size * dpr);
+      this.drawArrow(ctx, x1, y1, x2, y2, size);
     } else if (tool === 'rectangle') {
-      const x = Math.min(sx1, sx2);
-      const y = Math.min(sy1, sy2);
-      const w = Math.abs(sx2 - sx1);
-      const h = Math.abs(sy2 - sy1);
+      const x = Math.min(x1, x2);
+      const y = Math.min(y1, y2);
+      const w = Math.abs(x2 - x1);
+      const h = Math.abs(y2 - y1);
       if (filled) {
         ctx.fillRect(x, y, w, h);
       } else {
         ctx.strokeRect(x, y, w, h);
       }
     } else if (tool === 'circle') {
-      const rx = Math.abs(sx2 - sx1) / 2;
-      const ry = Math.abs(sy2 - sy1) / 2;
-      const cx = Math.min(sx1, sx2) + rx;
-      const cy = Math.min(sy1, sy2) + ry;
+      const rx = Math.abs(x2 - x1) / 2;
+      const ry = Math.abs(y2 - y1) / 2;
+      const cx = Math.min(x1, x2) + rx;
+      const cy = Math.min(y1, y2) + ry;
       ctx.beginPath();
       ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
       if (filled) {
@@ -721,7 +711,7 @@ class DrawingCanvas {
   }
 
   // ==========================================
-  // SINCRONIZACIÓN Y RE-DIBUJADO COMPLETO
+  // RE-DIBUJADO Y SINCRONIZACIÓN
   // ==========================================
 
   setStrokes(strokes) {
@@ -735,15 +725,15 @@ class DrawingCanvas {
   }
 
   redrawAll() {
-    this.mainCtx.clearRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
-    this.previewCtx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
+    this.mainCtx.clearRect(0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
+    this.previewCtx.clearRect(0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
 
-    // 1. Si hay plantilla activa, dibujarla como lienzo base inicial
+    // 1. Dibujar plantilla base 1000x1000
     if (this.templateImage) {
       this.drawTemplateToContext(this.mainCtx);
     }
 
-    // 2. Re-aplicar todos los trazos y rellenos en orden histórico
+    // 2. Re-aplicar acciones en orden cronológico
     for (const action of this.strokes) {
       if (action.type === 'floodFill') {
         this.applyFloodFill(action.x, action.y, action.color);
@@ -768,16 +758,16 @@ class DrawingCanvas {
     }
   }
 
-  // Exportar imagen
+  // Exportar dibujo en tamaño estándar de alta definición
   exportImage(format = 'image/png', background = 'white') {
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = this.mainCanvas.width;
-    tempCanvas.height = this.mainCanvas.height;
+    tempCanvas.width = this.VIRTUAL_SIZE;
+    tempCanvas.height = this.VIRTUAL_SIZE;
     const tempCtx = tempCanvas.getContext('2d');
 
     if (background === 'white') {
       tempCtx.fillStyle = '#ffffff';
-      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.fillRect(0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
     }
 
     tempCtx.drawImage(this.mainCanvas, 0, 0);

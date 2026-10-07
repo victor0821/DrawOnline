@@ -1,7 +1,7 @@
 const { io } = require('socket.io-client');
 
 const SERVER_URL = 'http://localhost:3000';
-const ROOM_CODE = 'COLOR-TEST';
+const ROOM_CODE = 'COLOR-TEST-' + Date.now();
 
 async function runTest() {
   console.log('--- Iniciando prueba de coloreado y colaboración para DrawOnline ---');
@@ -35,12 +35,14 @@ async function runTest() {
     templateName: 'T-Rex Jurásico'
   });
 
-  // Cliente 2 se une mediante el código de la sala
-  client2.emit('join_room', {
-    roomId: ROOM_CODE,
-    username: 'DaVinci',
-    color: '#10B981'
-  });
+  // Cliente 2 se une mediante el código de la sala poco después (como en uso real)
+  setTimeout(() => {
+    client2.emit('join_room', {
+      roomId: ROOM_CODE,
+      username: 'DaVinci',
+      color: '#10B981'
+    });
+  }, 80);
 
   // Verificar que Cliente 2 recibe el dibujo seleccionado por Cliente 1
   client2.on('canvas_init', (data) => {

@@ -720,6 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
 
   const remoteCursors = new Map();
+  const canvasBoard = document.getElementById('canvas-board') || canvasContainer;
 
   function updateRemoteCursor(data) {
     let cursorEl = remoteCursors.get(data.userId);
@@ -739,7 +740,10 @@ document.addEventListener('DOMContentLoaded', () => {
       remoteCursors.set(data.userId, cursorEl);
     }
 
-    cursorEl.style.transform = `translate(${data.x}px, ${data.y}px)`;
+    // Convertir de coordenadas virtuales (0..1000) a píxeles en pantalla
+    const screenX = (data.x / 1000) * drawingCanvas.displaySize;
+    const screenY = (data.y / 1000) * drawingCanvas.displaySize;
+    cursorEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
   }
 
   function removeRemoteCursor(userId) {
@@ -751,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let lastCursorSend = 0;
-  canvasContainer.addEventListener('mousemove', (e) => {
+  canvasBoard.addEventListener('mousemove', (e) => {
     const coords = drawingCanvas.getPointerCoords(e);
     const now = Date.now();
 
@@ -766,15 +770,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  canvasContainer.addEventListener('mouseleave', () => {
+  canvasBoard.addEventListener('mouseleave', () => {
     socket.emit('cursor_leave');
   });
 
-  function triggerLaser(x, y, color) {
+  function triggerLaser(virtualX, virtualY, color) {
+    const screenX = (virtualX / 1000) * drawingCanvas.displaySize;
+    const screenY = (virtualY / 1000) * drawingCanvas.displaySize;
+
     const dot = document.createElement('div');
     dot.className = 'laser-dot';
-    dot.style.left = `${x}px`;
-    dot.style.top = `${y}px`;
+    dot.style.left = `${screenX}px`;
+    dot.style.top = `${screenY}px`;
     dot.style.color = color;
     cursorsLayer.appendChild(dot);
 

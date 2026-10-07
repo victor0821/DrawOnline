@@ -228,12 +228,15 @@
     
     <!-- Contenedor del Lienzo con Capas -->
     <div id="canvas-container" class="canvas-grid-dots">
-      <!-- Capa 1: Lienzo de dibujo y relleno permanente -->
-      <canvas id="main-canvas"></canvas>
-      <!-- Capa 2: Previsualización interactiva de figuras y trazo en curso -->
-      <canvas id="preview-canvas"></canvas>
-      <!-- Capa 3: Cursores de colaboradores -->
-      <div id="cursors-layer" class="absolute inset-0 pointer-events-none"></div>
+      <!-- Tablero / Hoja de Dibujo Virtual Estandarizada (1000x1000) -->
+      <div id="canvas-board">
+        <!-- Capa 1: Lienzo de dibujo y relleno permanente -->
+        <canvas id="main-canvas" width="1000" height="1000"></canvas>
+        <!-- Capa 2: Previsualización interactiva de figuras y trazo en curso -->
+        <canvas id="preview-canvas" width="1000" height="1000"></canvas>
+        <!-- Capa 3: Cursores de colaboradores -->
+        <div id="cursors-layer"></div>
+      </div>
     </div>
 
     <!-- ========================================== -->
