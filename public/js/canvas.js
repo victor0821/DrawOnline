@@ -101,6 +101,8 @@ class DrawingCanvas {
       this.panX = 0;
       this.panY = 0;
     }
+    const board = document.getElementById('canvas-board');
+    if (board) board.style.transition = 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)';
     this.applyTransform();
     this.onZoomChange(this.zoomLevel);
   }
@@ -196,6 +198,13 @@ class DrawingCanvas {
     const pc = this.previewCanvas;
     const container = document.getElementById('canvas-container');
 
+    // Deshabilitar menú contextual del clic derecho sobre el lienzo para usarlo como arrastre
+    window.addEventListener('contextmenu', (e) => {
+      if (e.target.closest('#canvas-container') || e.target.closest('#canvas-board')) {
+        e.preventDefault();
+      }
+    });
+
     // Detección de barra espaciadora para mover/panear el lienzo cuando hay zoom
     window.addEventListener('keydown', (e) => {
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
@@ -225,23 +234,56 @@ class DrawingCanvas {
           }
         }
       }, { passive: false });
+
+      // Permitir iniciar arrastre con clic derecho desde cualquier punto del contenedor
+      container.addEventListener('mousedown', (e) => {
+        if (e.button === 2 || e.button === 1 || this.spacePressed) {
+          this.handleStart(e);
+        }
+      });
     }
 
     pc.addEventListener('mousedown', (e) => this.handleStart(e));
     window.addEventListener('mousemove', (e) => this.handleMove(e));
     window.addEventListener('mouseup', (e) => this.handleEnd(e));
 
+    // Touch
     pc.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length === 2) {
+        e.preventDefault();
+        this.isPanning = true;
+        const avgX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const avgY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        this.panStartX = avgX - this.panX;
+        this.panStartY = avgY - this.panY;
+        const board = document.getElementById('canvas-board');
+        if (board) board.style.transition = 'none';
+        return;
+      }
       e.preventDefault();
       this.handleStart(e);
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
+      if (this.isPanning && e.touches && e.touches.length === 2) {
+        e.preventDefault();
+        const avgX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const avgY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        this.panX = avgX - this.panStartX;
+        this.panY = avgY - this.panStartY;
+        this.applyTransform();
+        return;
+      }
       if (this.isDrawing || this.isPanning) e.preventDefault();
       this.handleMove(e);
     }, { passive: false });
 
     window.addEventListener('touchend', (e) => {
+      if (e.touches && e.touches.length < 2 && this.isPanning) {
+        this.isPanning = false;
+        const board = document.getElementById('canvas-board');
+        if (board) board.style.transition = 'transform 0.12s cubic-bezier(0.2, 0, 0, 1)';
+      }
       this.handleEnd(e);
     });
   }
@@ -251,11 +293,16 @@ class DrawingCanvas {
   // ==========================================
 
   handleStart(e) {
-    // Si se presiona la rueda central o espacio, activar paneo
-    if (e.button === 1 || this.spacePressed) {
+    // Si se presiona clic derecho (button === 2), rueda central (button === 1) o espacio, activar arrastre
+    if (e.button === 2 || e.button === 1 || this.spacePressed) {
+      if (e.preventDefault) e.preventDefault();
       this.isPanning = true;
       this.panStartX = e.clientX - this.panX;
       this.panStartY = e.clientY - this.panY;
+
+      const board = document.getElementById('canvas-board');
+      if (board) board.style.transition = 'none'; // Movimiento instantáneo a 60fps sin retraso
+
       const container = document.getElementById('canvas-container');
       if (container) container.style.cursor = 'grabbing';
       return;
@@ -374,6 +421,9 @@ class DrawingCanvas {
   handleEnd(e) {
     if (this.isPanning) {
       this.isPanning = false;
+      const board = document.getElementById('canvas-board');
+      if (board) board.style.transition = 'transform 0.12s cubic-bezier(0.2, 0, 0, 1)';
+
       const container = document.getElementById('canvas-container');
       if (container) container.style.cursor = this.spacePressed ? 'grab' : '';
       return;

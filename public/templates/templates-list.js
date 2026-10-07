@@ -3,6 +3,22 @@
  */
 const COLORING_TEMPLATES = [
   {
+    id: 'Ballenas_y_Delfines',
+    name: 'Ballenas y Delfines',
+    category: 'Animales',
+    emoji: '🐋',
+    description: 'Mamíferos marinos en su hábitat natural.',
+    src: '/templates/ballenas_y_delfines.svg'
+  },
+  {
+    id: 'Selva',
+    name: 'Selva',
+    category: 'Naturaleza',
+    emoji: '🐯',
+    description: 'La selva tropical con vida silvestre y paisajes exóticos.',
+    src: '/templates/selva_y_tigre.svg'
+  },
+  {
     id: 'floresitas',
     name: 'Floresitas',
     category: 'Mandalas & Flores',
