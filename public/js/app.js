@@ -145,6 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const toast = document.getElementById('toast');
   const toastMessage = document.getElementById('toast-message');
 
+  // Controles de Zoom en la mesa de dibujo
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const btnZoomReset = document.getElementById('btn-zoom-reset');
+  const zoomPercentageText = document.getElementById('zoom-percentage-text');
+
   // ==========================================
   // INICIALIZAR MOTOR DE DIBUJO Y COLOREADO
   // ==========================================
@@ -154,8 +160,17 @@ document.addEventListener('DOMContentLoaded', () => {
     onStrokeComplete: (stroke) => socket.emit('stroke_complete', stroke),
     onShapeDrawn: (shape) => socket.emit('add_shape', shape),
     onFloodFill: (fillAction) => socket.emit('flood_fill', fillAction),
-    onColorPicked: (hex) => selectColor(hex)
+    onColorPicked: (hex) => selectColor(hex),
+    onZoomChange: (zoom) => {
+      if (zoomPercentageText) {
+        zoomPercentageText.textContent = `${Math.round(zoom * 100)}%`;
+      }
+    }
   });
+
+  if (btnZoomIn) btnZoomIn.addEventListener('click', () => drawingCanvas.zoomIn());
+  if (btnZoomOut) btnZoomOut.addEventListener('click', () => drawingCanvas.zoomOut());
+  if (btnZoomReset) btnZoomReset.addEventListener('click', () => drawingCanvas.resetZoom());
 
   // Generador de código aleatorio
   function generateRoomCode() {
@@ -948,6 +963,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
       e.preventDefault();
       socket.emit('redo');
+      return;
+    }
+
+    // Atajos de Zoom (+ / - / 0)
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      drawingCanvas.zoomIn();
+      return;
+    }
+    if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      drawingCanvas.zoomOut();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+      e.preventDefault();
+      drawingCanvas.resetZoom();
       return;
     }
 

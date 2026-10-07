@@ -3,6 +3,14 @@
  */
 const COLORING_TEMPLATES = [
   {
+    id: 'floresitas',
+    name: 'Floresitas',
+    category: 'Mandalas & Flores',
+    emoji: '🌸',
+    description: 'Pétalos y naturaleza para que te otorguen felicidad.',
+    src: '/templates/dibujo_flores.svg'
+  },
+  {
     id: 'mandala',
     name: 'Mandala Zen',
     category: 'Mandalas & Flores',

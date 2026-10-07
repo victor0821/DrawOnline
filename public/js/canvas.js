@@ -58,10 +58,58 @@ class DrawingCanvas {
     this.onFloodFill = options.onFloodFill || (() => {});
     this.onColorPicked = options.onColorPicked || (() => {});
 
+    // Estado de Zoom y Paneo
+    this.zoomLevel = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.isPanning = false;
+    this.spacePressed = false;
+    this.panStartX = 0;
+    this.panStartY = 0;
+    this.onZoomChange = options.onZoomChange || (() => {});
+
     this.fitBoardToContainer();
     this.setupEventListeners();
 
     window.addEventListener('resize', () => this.fitBoardToContainer());
+  }
+
+  // Métodos de Control de Zoom
+  zoomIn() {
+    const zoomLevels = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
+    let nextZoom = zoomLevels.find(z => z > this.zoomLevel);
+    if (!nextZoom) nextZoom = Math.min(3.0, this.zoomLevel + 0.25);
+    this.setZoom(nextZoom);
+  }
+
+  zoomOut() {
+    const zoomLevels = [3.0, 2.5, 2.0, 1.5, 1.25, 1.0, 0.75, 0.5];
+    let prevZoom = zoomLevels.find(z => z < this.zoomLevel);
+    if (!prevZoom) prevZoom = Math.max(0.5, this.zoomLevel - 0.25);
+    this.setZoom(prevZoom);
+  }
+
+  resetZoom() {
+    this.panX = 0;
+    this.panY = 0;
+    this.setZoom(1.0);
+  }
+
+  setZoom(newZoom) {
+    this.zoomLevel = Math.round(newZoom * 100) / 100;
+    if (this.zoomLevel <= 1.0) {
+      this.panX = 0;
+      this.panY = 0;
+    }
+    this.applyTransform();
+    this.onZoomChange(this.zoomLevel);
+  }
+
+  applyTransform() {
+    const board = document.getElementById('canvas-board');
+    if (board) {
+      board.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoomLevel})`;
+    }
   }
 
   // Ajustar el tablero visual para que quepa proporcionalmente en la pantalla del usuario
@@ -146,6 +194,38 @@ class DrawingCanvas {
 
   setupEventListeners() {
     const pc = this.previewCanvas;
+    const container = document.getElementById('canvas-container');
+
+    // Detección de barra espaciadora para mover/panear el lienzo cuando hay zoom
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      if (e.code === 'Space' && !this.spacePressed) {
+        this.spacePressed = true;
+        if (container) container.style.cursor = 'grab';
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        this.spacePressed = false;
+        this.isPanning = false;
+        if (container) container.style.cursor = '';
+      }
+    });
+
+    // Zoom con rueda del ratón (Ctrl + Scroll)
+    if (container) {
+      container.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          if (e.deltaY < 0) {
+            this.zoomIn();
+          } else {
+            this.zoomOut();
+          }
+        }
+      }, { passive: false });
+    }
 
     pc.addEventListener('mousedown', (e) => this.handleStart(e));
     window.addEventListener('mousemove', (e) => this.handleMove(e));
@@ -157,7 +237,7 @@ class DrawingCanvas {
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
-      if (this.isDrawing) e.preventDefault();
+      if (this.isDrawing || this.isPanning) e.preventDefault();
       this.handleMove(e);
     }, { passive: false });
 
@@ -171,7 +251,19 @@ class DrawingCanvas {
   // ==========================================
 
   handleStart(e) {
+    // Si se presiona la rueda central o espacio, activar paneo
+    if (e.button === 1 || this.spacePressed) {
+      this.isPanning = true;
+      this.panStartX = e.clientX - this.panX;
+      this.panStartY = e.clientY - this.panY;
+      const container = document.getElementById('canvas-container');
+      if (container) container.style.cursor = 'grabbing';
+      return;
+    }
+
     if (e.button !== undefined && e.button !== 0) return;
+    if (this.isPanning) return;
+
     const coords = this.getPointerCoords(e);
     this.startX = coords.x;
     this.startY = coords.y;
@@ -232,6 +324,13 @@ class DrawingCanvas {
   }
 
   handleMove(e) {
+    if (this.isPanning) {
+      this.panX = e.clientX - this.panStartX;
+      this.panY = e.clientY - this.panStartY;
+      this.applyTransform();
+      return;
+    }
+
     if (!this.isDrawing) return;
     const coords = this.getPointerCoords(e);
 
@@ -273,6 +372,13 @@ class DrawingCanvas {
   }
 
   handleEnd(e) {
+    if (this.isPanning) {
+      this.isPanning = false;
+      const container = document.getElementById('canvas-container');
+      if (container) container.style.cursor = this.spacePressed ? 'grab' : '';
+      return;
+    }
+
     if (!this.isDrawing) return;
     this.isDrawing = false;
 
