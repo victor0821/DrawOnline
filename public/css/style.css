@@ -62,6 +62,43 @@ body {
   z-index: 30;
 }
 
+/* Estilos de Slider Horizontal con Thumb Grande */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  background: #1e293b;
+  border-radius: 9999px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #6366f1;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  background: #4f46e5;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #6366f1;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
 /* Grid Pattern */
 .canvas-grid-dots {
   background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
@@ -102,6 +139,13 @@ body {
   transform: scale(1.2);
   outline: 3px solid #4f46e5;
   outline-offset: 2px;
+}
+
+/* Preset de tamaño activo */
+.size-preset-btn.active {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
 }
 
 /* Remote User Cursors */

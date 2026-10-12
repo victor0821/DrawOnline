@@ -101,6 +101,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputBrushSize = document.getElementById('input-brush-size');
   const sizePreviewDot = document.getElementById('size-preview-dot');
   const brushSizeText = document.getElementById('brush-size-text');
+  const btnSizeToggle = document.getElementById('btn-size-toggle');
+  const brushSizePopover = document.getElementById('brush-size-popover');
+  const popoverSizeText = document.getElementById('popover-size-text');
+  const btnSizeIncrease = document.getElementById('btn-size-increase');
+  const btnSizeDecrease = document.getElementById('btn-size-decrease');
   const btnUndo = document.getElementById('btn-undo');
   const btnRedo = document.getElementById('btn-redo');
   const btnClear = document.getElementById('btn-clear');
@@ -119,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const changeTemplateGrid = document.getElementById('change-template-grid');
   const btnCancelChangeTemplate = document.getElementById('btn-cancel-change-template');
   const btnConfirmChangeTemplate = document.getElementById('btn-confirm-change-template');
+  const inputRoomUploadTemplate = document.getElementById('input-room-upload-template');
   let pendingChangeTemplate = null;
 
   // Drawer Chat / Usuarios
@@ -182,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return code;
   }
 
-  // Notificación Toast
+  // Notificación Toast central inferior
   let toastTimeout;
   function showToast(text, duration = 3000) {
     clearTimeout(toastTimeout);
@@ -195,19 +201,87 @@ document.addEventListener('DOMContentLoaded', () => {
     }, duration);
   }
 
+  // Notificaciones sutiles flotantes (Unirse, Retirarse, Nuevos Mensajes de Chat)
+  function showSubtleToast({ icon = '🔔', title = '', message = '', color = null, onClick = null }) {
+    const container = document.getElementById('subtle-notification-container');
+    if (!container) return;
+
+    const toastEl = document.createElement('div');
+    toastEl.className = 'pointer-events-auto bg-slate-900/95 backdrop-blur-md border border-slate-700/80 text-white px-3.5 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs transition-all transform duration-300 translate-y-[-10px] opacity-0 hover:scale-[1.02] cursor-pointer max-w-sm';
+
+    let iconHtml = '';
+    if (color) {
+      iconHtml = `<div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow ring-2 ring-white/30" style="background-color: ${color}">${icon}</div>`;
+    } else {
+      iconHtml = `<div class="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-xs shrink-0 border border-slate-700">${icon}</div>`;
+    }
+
+    toastEl.innerHTML = `
+      ${iconHtml}
+      <div class="flex-1 min-w-0 pr-1">
+        <div class="font-bold text-slate-200 truncate">${escapeHtml(title)}</div>
+        <p class="text-slate-400 text-[11px] truncate leading-tight mt-0.5">${escapeHtml(message)}</p>
+      </div>
+    `;
+
+    if (onClick) {
+      toastEl.addEventListener('click', onClick);
+    }
+
+    container.appendChild(toastEl);
+
+    // Animación suave de entrada
+    requestAnimationFrame(() => {
+      toastEl.classList.remove('translate-y-[-10px]', 'opacity-0');
+      toastEl.classList.add('translate-y-0', 'opacity-100');
+    });
+
+    // Auto-cierre tras 3.8 segundos
+    setTimeout(() => {
+      toastEl.classList.add('opacity-0', 'translate-y-[-10px]');
+      setTimeout(() => toastEl.remove(), 300);
+    }, 3800);
+  }
+
   // Nombre de artista aleatorio
   const randomNames = ['DaVinci', 'Picasso', 'Monet', 'Frida', 'VanGogh', 'Dali', 'Kandinsky', 'Warhol', 'Miró'];
   inputUsername.value = randomNames[Math.floor(Math.random() * randomNames.length)] + '_' + Math.floor(10 + Math.random() * 89);
 
-  // Selector de Color en Lobby
+  // Selector de Color de Cursor en Lobby con feedback visual dinámico
+  const userCursorColorPreview = document.getElementById('user-cursor-color-preview');
   const userColorBtns = document.querySelectorAll('.user-color-btn');
+
+  function selectUserCursorColor(color) {
+    if (!color) return;
+    currentUser.color = color;
+    if (userCursorColorPreview) {
+      userCursorColorPreview.style.backgroundColor = color;
+    }
+
+    userColorBtns.forEach(btn => {
+      const btnColor = btn.dataset.color;
+      // Mantener siempre visible y vibrante su color de fondo
+      btn.style.backgroundColor = btnColor;
+
+      const isSelected = btnColor.toLowerCase() === color.toLowerCase();
+      if (isSelected) {
+        btn.className = 'user-color-btn relative w-7 h-7 rounded-full ring-4 ring-white ring-offset-2 ring-offset-slate-900 scale-125 z-10 shadow-xl shadow-black/80 transition-all flex items-center justify-center cursor-pointer';
+        btn.innerHTML = `<svg class="w-3.5 h-3.5 text-white filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      } else {
+        btn.className = 'user-color-btn relative w-7 h-7 rounded-full opacity-70 hover:opacity-100 hover:scale-110 transition-all flex items-center justify-center cursor-pointer border-2 border-white/20';
+        btn.innerHTML = '';
+      }
+    });
+  }
+
   userColorBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      userColorBtns.forEach(b => b.classList.remove('ring-indigo-500'));
-      btn.classList.add('ring-indigo-500');
-      currentUser.color = btn.dataset.color;
+      selectUserCursorColor(btn.dataset.color);
     });
   });
+
+  // Inicializar selección visual de cursor con el color por defecto
+  selectUserCursorColor(currentUser.color);
 
   // Revisar si viene ?room= en la URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -446,7 +520,8 @@ document.addEventListener('DOMContentLoaded', () => {
       username: currentUser.username,
       color: currentUser.color,
       template: tplToSend ? tplToSend.id : 'mandala',
-      templateName: tplToSend ? tplToSend.name : 'Mandala Zen'
+      templateName: tplToSend ? tplToSend.name : 'Mandala Zen',
+      templateSrc: tplToSend ? tplToSend.src : null
     });
 
     currentRoomBadge.textContent = currentRoomId;
@@ -553,11 +628,39 @@ document.addEventListener('DOMContentLoaded', () => {
   btnCloseChangeTemplate.addEventListener('click', () => changeTemplateModal.classList.add('hidden'));
   btnCancelChangeTemplate.addEventListener('click', () => changeTemplateModal.classList.add('hidden'));
 
+  if (inputRoomUploadTemplate) {
+    inputRoomUploadTemplate.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const customId = 'custom_' + Date.now();
+        const newTpl = {
+          id: customId,
+          name: file.name.replace(/\.[^/.]+$/, '').slice(0, 15),
+          category: 'Personalizado',
+          emoji: '🖼️',
+          description: 'Imagen subida desde tu dispositivo',
+          src: event.target.result
+        };
+        customTemplates.unshift(newTpl);
+        pendingChangeTemplate = newTpl;
+        renderChangeTemplateGallery();
+        showToast(`¡Dibujo "${newTpl.name}" cargado! Pulsa "Cambiar Dibujo" para aplicarlo.`);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   btnConfirmChangeTemplate.addEventListener('click', () => {
     if (!pendingChangeTemplate) return;
+    // Limpiar el lienzo inmediatamente para que no queden colores del dibujo anterior
+    drawingCanvas.clearCanvas();
     socket.emit('change_template', {
       template: pendingChangeTemplate.id,
-      templateName: pendingChangeTemplate.name
+      templateName: pendingChangeTemplate.name,
+      templateSrc: pendingChangeTemplate.src || null
     });
     changeTemplateModal.classList.add('hidden');
   });
@@ -589,15 +692,96 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Tamaño de pincel
-  inputBrushSize.addEventListener('input', (e) => {
-    const size = parseInt(e.target.value, 10);
+  // ==========================================
+  // CONTROL DE GROSOR DE PINCEL Y SLIDER
+  // ==========================================
+
+  function updateBrushSize(newSize) {
+    const size = Math.max(1, Math.min(50, parseInt(newSize, 10) || 8));
     drawingCanvas.currentSize = size;
-    brushSizeText.textContent = `${size}px`;
-    const previewScale = Math.min(24, Math.max(4, size));
-    sizePreviewDot.style.width = `${previewScale}px`;
-    sizePreviewDot.style.height = `${previewScale}px`;
+    if (inputBrushSize) inputBrushSize.value = size;
+    if (brushSizeText) brushSizeText.textContent = `${size}px`;
+    if (popoverSizeText) popoverSizeText.textContent = `${size}px`;
+
+    if (sizePreviewDot) {
+      const previewScale = Math.min(24, Math.max(4, size));
+      sizePreviewDot.style.width = `${previewScale}px`;
+      sizePreviewDot.style.height = `${previewScale}px`;
+    }
+
+    // Actualizar clase activa en los botones de preset
+    document.querySelectorAll('.size-preset-btn').forEach(btn => {
+      const presetVal = parseInt(btn.dataset.size, 10);
+      if (presetVal === size) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  // Slider arrastrable
+  if (inputBrushSize) {
+    inputBrushSize.addEventListener('input', (e) => {
+      updateBrushSize(e.target.value);
+    });
+  }
+
+  // Abrir / Cerrar popover de grosor con el botón principal
+  if (btnSizeToggle && brushSizePopover) {
+    btnSizeToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      brushSizePopover.classList.toggle('hidden');
+    });
+
+    // Evitar que clics dentro del popover lo cierren
+    brushSizePopover.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Botón rápido de incremento (+)
+  if (btnSizeIncrease) {
+    btnSizeIncrease.addEventListener('click', (e) => {
+      e.stopPropagation();
+      updateBrushSize(drawingCanvas.currentSize + 2);
+    });
+  }
+
+  // Botón rápido de decremento (-)
+  if (btnSizeDecrease) {
+    btnSizeDecrease.addEventListener('click', (e) => {
+      e.stopPropagation();
+      updateBrushSize(drawingCanvas.currentSize - 2);
+    });
+  }
+
+  // Presets de tamaño rápido (3px, 8px, 16px, 30px)
+  document.querySelectorAll('.size-preset-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const val = parseInt(btn.dataset.size, 10);
+      if (val) updateBrushSize(val);
+    });
   });
+
+  // Cerrar el popover al hacer clic fuera del control o presionar Escape
+  document.addEventListener('click', (e) => {
+    if (brushSizePopover && !brushSizePopover.classList.contains('hidden')) {
+      if (!e.target.closest('#brush-size-container')) {
+        brushSizePopover.classList.add('hidden');
+      }
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && brushSizePopover && !brushSizePopover.classList.contains('hidden')) {
+      brushSizePopover.classList.add('hidden');
+    }
+  });
+
+  // Inicializar grosor por defecto en 8px
+  updateBrushSize(8);
 
   // Deshacer y Rehacer
   btnUndo.addEventListener('click', () => socket.emit('undo'));
@@ -702,9 +886,19 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.appendChild(msgEl);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    if (!isChatOpen && !isMe) {
-      unreadMessages++;
-      chatUnreadBadge.classList.remove('hidden');
+    if (!isMe) {
+      if (!isChatOpen) {
+        unreadMessages++;
+        chatUnreadBadge.classList.remove('hidden');
+      }
+      // Notificación sutil flotante en pantalla al recibir un mensaje
+      showSubtleToast({
+        icon: '💬',
+        title: msg.username,
+        message: msg.text,
+        color: msg.color,
+        onClick: () => toggleDrawer(true)
+      });
     }
   }
 
@@ -718,6 +912,23 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     chatMessages.appendChild(sysEl);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Notificación sutil flotante cuando un participante entra o sale de la mesa
+    if (sys.type === 'join' && sys.userId !== socket.id) {
+      showSubtleToast({
+        icon: '👋',
+        title: sys.user || 'Artista',
+        message: 'se unió a colorear en la mesa',
+        color: sys.color
+      });
+    } else if (sys.type === 'leave') {
+      showSubtleToast({
+        icon: '🚪',
+        title: sys.user || 'Artista',
+        message: 'se retiró de la mesa',
+        color: sys.color
+      });
+    }
   }
 
   function escapeHtml(str) {
@@ -812,28 +1023,50 @@ document.addEventListener('DOMContentLoaded', () => {
   // EVENTOS RECIBIDOS DESDE SOCKET.IO
   // ==========================================
 
-  function findTemplateById(tplId) {
-    return getAllTemplates().find(t => t.id === tplId) || (window.COLORING_TEMPLATES && window.COLORING_TEMPLATES[0]);
+  function findTemplateById(tplId, customSrc = null, customName = null) {
+    let tpl = getAllTemplates().find(t => t.id === tplId);
+    if (!tpl && (customSrc || (tplId && tplId.startsWith('custom_')))) {
+      tpl = {
+        id: tplId,
+        name: customName || 'Personalizado',
+        category: 'Personalizado',
+        emoji: '🖼️',
+        description: 'Imagen compartida en la mesa',
+        src: customSrc
+      };
+      customTemplates.unshift(tpl);
+    } else if (tpl && customSrc && !tpl.src) {
+      tpl.src = customSrc;
+    }
+    return tpl || (window.COLORING_TEMPLATES && window.COLORING_TEMPLATES[0]);
   }
 
-  function setRoomTemplate(tplId, tplName) {
-    const tpl = findTemplateById(tplId);
+  function setRoomTemplate(tplId, tplName, tplSrc = null) {
+    const tpl = findTemplateById(tplId, tplSrc, tplName);
     if (tpl) {
       selectedTemplate = tpl;
       headerTemplateIcon.textContent = tpl.emoji || '🎨';
       headerTemplateName.textContent = tplName || tpl.name;
-      drawingCanvas.loadTemplate(tpl.src);
+      const finalSrc = tplSrc || tpl.src;
+      tpl.src = finalSrc;
+
+      // Limpiar trazos para que no queden colores del dibujo anterior
+      drawingCanvas.strokes = [];
+      drawingCanvas.loadTemplate(finalSrc);
     }
   }
 
   socket.on('canvas_init', (data) => {
-    const tpl = findTemplateById(data.template);
+    const tpl = findTemplateById(data.template, data.templateSrc, data.templateName);
     if (tpl) {
       selectedTemplate = tpl;
       headerTemplateIcon.textContent = tpl.emoji || '🎨';
       headerTemplateName.textContent = data.templateName || tpl.name;
+      const finalSrc = data.templateSrc || tpl.src;
+      tpl.src = finalSrc;
 
-      drawingCanvas.loadTemplate(tpl.src, () => {
+      drawingCanvas.strokes = [];
+      drawingCanvas.loadTemplate(finalSrc, () => {
         drawingCanvas.setStrokes(data.strokes || []);
       });
     } else {
@@ -845,7 +1078,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   socket.on('template_changed', (data) => {
-    setRoomTemplate(data.template, data.templateName);
+    // 1. Limpiar completamente los trazos previos para que no queden colores del dibujo anterior
+    drawingCanvas.clearCanvas();
+
+    // 2. Cargar el nuevo dibujo sincronizado (con su imagen personalizada si aplica)
+    setRoomTemplate(data.template, data.templateName, data.templateSrc);
+
     showToast(`El dibujo ha cambiado a: ${data.templateName}`);
     btnUndo.disabled = true;
     btnRedo.disabled = true;

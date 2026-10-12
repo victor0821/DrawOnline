@@ -73,15 +73,21 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Color de tu Cursor</label>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Color de tu Cursor</label>
+            <span id="user-cursor-color-preview" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-white px-2 py-0.5 rounded-full shadow-sm transition-all" style="background-color: #6366F1;">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.92c.45 0 .67-.54.35-.85L6.35 2.85a.5.5 0 0 0-.85.36z" stroke="#ffffff" stroke-width="1.5"/></svg>
+              <span>Cursor</span>
+            </span>
+          </div>
           <div class="flex items-center justify-between gap-1.5 p-1.5 bg-slate-800/90 rounded-xl border border-slate-700/60" id="user-color-picker-group">
-            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-red-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#EF4444"></button>
-            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-orange-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#F97316"></button>
-            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-amber-400 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#F59E0B"></button>
-            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-emerald-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#10B981"></button>
-            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-cyan-400 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#06B6D4"></button>
-            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-indigo-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-indigo-500 hover:scale-110 transition" data-color="#6366F1"></button>
-            <button type="button" class="user-color-btn w-6 h-6 rounded-full bg-pink-500 ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:scale-110 transition" data-color="#EC4899"></button>
+            <button type="button" class="user-color-btn relative w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer" style="background-color: #EF4444;" data-color="#EF4444"></button>
+            <button type="button" class="user-color-btn relative w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer" style="background-color: #F97316;" data-color="#F97316"></button>
+            <button type="button" class="user-color-btn relative w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer" style="background-color: #F59E0B;" data-color="#F59E0B"></button>
+            <button type="button" class="user-color-btn relative w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer" style="background-color: #10B981;" data-color="#10B981"></button>
+            <button type="button" class="user-color-btn relative w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer" style="background-color: #06B6D4;" data-color="#06B6D4"></button>
+            <button type="button" class="user-color-btn relative w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer" style="background-color: #6366F1;" data-color="#6366F1"></button>
+            <button type="button" class="user-color-btn relative w-7 h-7 rounded-full transition-all flex items-center justify-center cursor-pointer" style="background-color: #EC4899;" data-color="#EC4899"></button>
           </div>
         </div>
       </div>
@@ -338,11 +344,49 @@
       </div>
 
       <!-- Control de Grosor del Trazo -->
-      <div class="flex flex-col items-center gap-1 border-b border-slate-800 pb-2 pt-1" data-tooltip="Grosor de trazo">
-        <div id="size-preview-dot" class="w-3 h-3 bg-red-500 rounded-full my-1 transition-all"></div>
-        <input type="range" id="input-brush-size" min="1" max="50" value="6" orient="vertical" 
-          class="w-1 h-16 accent-indigo-500 bg-slate-800 rounded-lg cursor-pointer">
-        <span id="brush-size-text" class="text-[10px] font-mono text-slate-400">6px</span>
+      <div class="relative flex flex-col items-center border-b border-slate-800 pb-2 pt-1" id="brush-size-container">
+        <!-- Botón para aumentar grosor rápido (+) -->
+        <button id="btn-size-increase" type="button" class="w-8 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition text-xs font-bold" data-tooltip="Aumentar grosor (+)">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <!-- Botón principal de Grosor con previsualización del punto -->
+        <button id="btn-size-toggle" type="button" class="w-10 h-10 rounded-xl flex flex-col items-center justify-center hover:bg-slate-800 transition my-0.5 group" data-tooltip="Ajustar grosor">
+          <div id="size-preview-dot" class="w-2.5 h-2.5 bg-red-500 rounded-full transition-all"></div>
+          <span id="brush-size-text" class="text-[10px] font-mono text-slate-300 font-bold mt-1">8px</span>
+        </button>
+
+        <!-- Botón para reducir grosor rápido (-) -->
+        <button id="btn-size-decrease" type="button" class="w-8 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition text-xs font-bold" data-tooltip="Reducir grosor (-)">
+          <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <!-- Popover flotante con el Slider Horizontal Completo y Presets -->
+        <div id="brush-size-popover" class="absolute left-full top-0 ml-3 w-56 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3.5 shadow-2xl z-50 hidden transition-all">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-white">Grosor de Trazo</span>
+            <span id="popover-size-text" class="text-xs font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">8px</span>
+          </div>
+
+          <!-- Slider horizontal con diseño limpio y amplio -->
+          <div class="my-3">
+            <input type="range" id="input-brush-size" min="1" max="50" value="8" 
+              class="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1.5">
+              <span>1px</span>
+              <span>25px</span>
+              <span>50px</span>
+            </div>
+          </div>
+
+          <!-- Botones de tamaño rápido (Presets) -->
+          <div class="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-800">
+            <button type="button" class="size-preset-btn py-1 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white text-[11px] font-mono font-semibold transition text-center" data-size="3">3px</button>
+            <button type="button" class="size-preset-btn py-1 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white text-[11px] font-mono font-semibold transition text-center active" data-size="8">8px</button>
+            <button type="button" class="size-preset-btn py-1 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white text-[11px] font-mono font-semibold transition text-center" data-size="16">16px</button>
+            <button type="button" class="size-preset-btn py-1 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white text-[11px] font-mono font-semibold transition text-center" data-size="30">30px</button>
+          </div>
+        </div>
       </div>
 
       <!-- Acciones: Deshacer, Rehacer y Limpiar -->
@@ -428,7 +472,16 @@
           </button>
         </div>
 
-        <div id="change-template-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-64 overflow-y-auto pr-1 mb-4">
+        <div class="flex items-center justify-between mb-3 bg-slate-800/40 p-2.5 rounded-2xl border border-slate-700/50">
+          <span class="text-xs text-slate-300 font-medium">¿Quieres subir tu propia imagen?</span>
+          <label class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-xl cursor-pointer flex items-center gap-1.5 transition shadow">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+            <span>Subir imagen B/N</span>
+            <input type="file" id="input-room-upload-template" accept="image/png, image/jpeg, image/svg+xml" class="hidden">
+          </label>
+        </div>
+
+        <div id="change-template-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-60 overflow-y-auto pr-1 mb-4">
           <!-- Galería inyectada -->
         </div>
 
@@ -561,6 +614,11 @@
     <i id="toast-icon" data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
     <span id="toast-message">Notificación</span>
   </div>
+
+  <!-- ========================================== -->
+  <!-- NOTIFICACIONES SUTILES FLOTANTES (SALA Y CHAT) -->
+  <!-- ========================================== -->
+  <div id="subtle-notification-container" class="fixed top-16 right-4 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-xs sm:max-w-sm"></div>
 
   <!-- Scripts -->
   <script src="/js/canvas.js"></script>

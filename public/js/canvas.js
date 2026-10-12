@@ -174,7 +174,22 @@ class DrawingCanvas {
   drawTemplateToContext(ctx) {
     if (!this.templateImage) return;
     ctx.save();
-    ctx.drawImage(this.templateImage, 0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
+    const img = this.templateImage;
+    const imgW = img.naturalWidth || img.width || this.VIRTUAL_SIZE;
+    const imgH = img.naturalHeight || img.height || this.VIRTUAL_SIZE;
+
+    // Si la imagen es cuadrada o casi cuadrada, llenamos 1000x1000
+    if (Math.abs(imgW - imgH) < 15) {
+      ctx.drawImage(img, 0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
+    } else {
+      // Si la imagen no es cuadrada (fotos, dibujos rectangulares), centramos proporcionalmente
+      const scale = Math.min(this.VIRTUAL_SIZE / imgW, this.VIRTUAL_SIZE / imgH);
+      const drawW = imgW * scale;
+      const drawH = imgH * scale;
+      const offsetX = (this.VIRTUAL_SIZE - drawW) / 2;
+      const offsetY = (this.VIRTUAL_SIZE - drawH) / 2;
+      ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+    }
     ctx.restore();
   }
 
@@ -877,12 +892,17 @@ class DrawingCanvas {
 
   clearCanvas() {
     this.strokes = [];
+    this.remoteActiveStrokes.clear();
     this.redrawAll();
   }
 
   redrawAll() {
     this.mainCtx.clearRect(0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
     this.previewCtx.clearRect(0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
+
+    // Fondo blanco base uniforme para detección precisa del bote de pintura
+    this.mainCtx.fillStyle = '#FFFFFF';
+    this.mainCtx.fillRect(0, 0, this.VIRTUAL_SIZE, this.VIRTUAL_SIZE);
 
     // 1. Dibujar plantilla base 1000x1000
     if (this.templateImage) {

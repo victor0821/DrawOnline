@@ -49,7 +49,7 @@ function getRandomColor() {
   return PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
 }
 
-function getOrCreateRoom(roomId, templateId = 'mandala', templateName = 'Mandala Zen') {
+function getOrCreateRoom(roomId, templateId = 'mandala', templateName = 'Mandala Zen', templateSrc = null) {
   const normalizedId = roomId.trim().toUpperCase();
   if (!rooms.has(normalizedId)) {
     rooms.set(normalizedId, {
@@ -57,6 +57,7 @@ function getOrCreateRoom(roomId, templateId = 'mandala', templateName = 'Mandala
       createdAt: Date.now(),
       template: templateId,
       templateName: templateName,
+      templateSrc: templateSrc || null,
       users: new Map(),
       strokes: [],      // Historial de trazos y rellenos
       redoStack: []     // Pila para rehacer
@@ -70,12 +71,15 @@ io.on('connection', (socket) => {
   let currentUser = null;
 
   // Unirse a una sala
-  socket.on('join_room', ({ roomId, username, color, template, templateName }) => {
+  socket.on('join_room', ({ roomId, username, color, template, templateName, templateSrc }) => {
     if (!roomId) return;
     const normRoomId = roomId.trim().toUpperCase();
     currentRoomId = normRoomId;
 
-    const room = getOrCreateRoom(normRoomId, template, templateName);
+    const room = getOrCreateRoom(normRoomId, template, templateName, templateSrc);
+    if (templateSrc && !room.templateSrc) {
+      room.templateSrc = templateSrc;
+    }
     socket.join(normRoomId);
 
     currentUser = {
@@ -87,12 +91,13 @@ io.on('connection', (socket) => {
 
     room.users.set(socket.id, currentUser);
 
-    // Enviar el estado actual de la pizarra y la plantilla elegida
+    // Enviar el estado actual de la pizarra y la plantilla elegida (incluyendo imagen personalizada si existe)
     socket.emit('canvas_init', {
       roomId: normRoomId,
       user: currentUser,
       template: room.template,
       templateName: room.templateName,
+      templateSrc: room.templateSrc,
       strokes: room.strokes,
       canUndo: room.strokes.length > 0,
       canRedo: room.redoStack.length > 0
@@ -102,28 +107,33 @@ io.on('connection', (socket) => {
     const usersList = Array.from(room.users.values());
     io.to(normRoomId).emit('room_users', usersList);
 
-    // Anuncio en el chat del sistema
+    // Anuncio en el chat del sistema con datos de usuario
     io.to(normRoomId).emit('system_message', {
       text: `${currentUser.username} se unió a colorear`,
       type: 'join',
+      user: currentUser.username,
+      userId: socket.id,
+      color: currentUser.color,
       timestamp: Date.now()
     });
   });
 
   // Cambiar dibujo o plantilla para toda la sala
-  socket.on('change_template', ({ template, templateName }) => {
+  socket.on('change_template', ({ template, templateName, templateSrc }) => {
     if (!currentRoomId) return;
     const room = rooms.get(currentRoomId);
     if (!room) return;
 
     room.template = template;
     room.templateName = templateName || 'Dibujo';
+    room.templateSrc = templateSrc || null;
     room.strokes = [];
     room.redoStack = [];
 
     io.to(currentRoomId).emit('template_changed', {
       template: room.template,
       templateName: room.templateName,
+      templateSrc: room.templateSrc,
       user: currentUser?.username
     });
 
@@ -135,6 +145,8 @@ io.on('connection', (socket) => {
     io.to(currentRoomId).emit('system_message', {
       text: `${currentUser?.username || 'Un usuario'} cambió el dibujo a: "${room.templateName}"`,
       type: 'template',
+      user: currentUser?.username,
+      userId: socket.id,
       timestamp: Date.now()
     });
   });
@@ -342,6 +354,9 @@ io.on('connection', (socket) => {
         socket.to(currentRoomId).emit('system_message', {
           text: `${currentUser?.username || 'Un usuario'} salió de la sala`,
           type: 'leave',
+          user: currentUser?.username,
+          userId: socket.id,
+          color: currentUser?.color,
           timestamp: Date.now()
         });
       }
